@@ -68,7 +68,7 @@ more about this topic.
 You can add the library to your project via Maven or Gradle.
 
 > [!NOTE]
-> Since 0.1.18 there is now a dependency on [SLF4J](https://www.slf4j.org/). You need to add one of the adapter dependencies that makes sense for your logging setup. In the configuration samples below we are integrating [slf4j-nop](https://search.maven.org/#artifactdetails%7Corg.slf4j%7Cslf4j-nop%7C1.7.25%7Cjar), but there are others like [slf4j-log4j12](https://search.maven.org/#artifactdetails%7Corg.slf4j%7Cslf4j-log4j12%7C1.7.25%7Cjar) and [slf4j-jdk14](https://search.maven.org/#artifactdetails%7Corg.slf4j%7Cslf4j-jdk14%7C1.7.25%7Cjar) that will make more sense in other configurations. This will stop a warning message being emitted when you start using `google-maps-services`.
+> This library uses the [SLF4J 2 logging API](https://www.slf4j.org/manual.html). The examples below use `slf4j-simple:2.0.16`; choose exactly one [compatible provider](https://www.slf4j.org/manual.html#swapping) for your application's logging setup. To intentionally disable logging, use `slf4j-nop:2.0.16` instead.
 
 ### Maven
 
@@ -81,7 +81,7 @@ You can add the library to your project via Maven or Gradle.
 <dependency>
   <groupId>org.slf4j</groupId>
   <artifactId>slf4j-simple</artifactId>
-  <version>1.7.25</version>
+  <version>2.0.16</version>
 </dependency>
 ```
 
@@ -94,7 +94,7 @@ repositories {
 
 dependencies {
     implementation 'com.google.maps:google-maps-services:(insert latest version)'
-    implementation 'org.slf4j:slf4j-simple:1.7.25'
+    implementation 'org.slf4j:slf4j-simple:2.0.16'
 }
 ```
 
