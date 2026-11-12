@@ -171,9 +171,15 @@ based strategy.
 
 ### Rate Limiting
 
-Never sleep between requests again! By default, requests are sent at the expected rate limits for
-each web service, typically 50 queries per second for free users. If you want to speed up or slow
-down requests, you can do that too, using `new GeoApiContext.Builder().queryRateLimit(qps).build()`.
+The default OkHttp handler limits requests locally to 50 queries per second. Configure this
+throttle with `new GeoApiContext.Builder().queryRateLimit(qps).build()`.
+
+This local setting does not discover your project's quotas or account for usage by other
+applications or processes. It is not a Google-enforced service quota or a free-usage allowance.
+Check your API's usage and billing documentation (for example, [Geocoding](https://developers.google.com/maps/documentation/geocoding/usage-and-billing))
+and [Cloud Console quotas](https://console.cloud.google.com/google/maps-apis/quotas) for your
+project's limits.
+
 Note that you still need to manually handle the [delay between the initial request and successive pages](https://developers.google.com/places/web-service/search#PlaceSearchPaging) when you're paging through multiple result sets.
 
 ### Retry on Failure
