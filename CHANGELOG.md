@@ -1,8 +1,10 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+This file is a historical archive through v0.11.0. For subsequent releases, see
+[GitHub Releases](https://github.com/googlemaps/google-maps-services-java/releases).
 
-## [Unreleased](https://github.com/googlemaps/google-maps-services-java/compare/v0.11.0...HEAD)
+For major-version upgrade notes, see [v1.0.0](https://github.com/googlemaps/google-maps-services-java/releases/tag/v1.0.0)
+and [v2.0.0](https://github.com/googlemaps/google-maps-services-java/releases/tag/v2.0.0).
 
 ## [v0.11.0](https://github.com/googlemaps/google-maps-services-java/compare/v0.10.2...v0.11.0) - 2020-01-21
 
