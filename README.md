@@ -1,7 +1,6 @@
 # Java Client for Google Maps Services
 
-[![Build Status](https://travis-ci.org/googlemaps/google-maps-services-java.svg)](https://travis-ci.org/googlemaps/google-maps-services-java)
-[![Coverage Status](https://img.shields.io/coveralls/googlemaps/google-maps-services-java.svg)](https://coveralls.io/r/googlemaps/google-maps-services-java)
+[![Build Status](https://github.com/googlemaps/google-maps-services-java/actions/workflows/test.yml/badge.svg)](https://github.com/googlemaps/google-maps-services-java/actions/workflows/test.yml)
 [![Maven Central Version](http://img.shields.io/maven-central/v/com.google.maps/google-maps-services.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.google.maps%22%20a%3A%22google-maps-services%22)
 [![Javadocs](https://www.javadoc.io/badge/com.google.maps/google-maps-services.svg)](https://www.javadoc.io/doc/com.google.maps/google-maps-services)
 ![GitHub contributors](https://img.shields.io/github/contributors/googlemaps/google-maps-services-java?color=green)
