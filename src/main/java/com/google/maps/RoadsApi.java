@@ -70,6 +70,13 @@ public class RoadsApi {
    * Returns the posted speed limit for given road segments. The provided LatLngs will first be
    * snapped to the most likely roads the vehicle was traveling along.
    *
+   * <p>This is a limited-access service for Asset Tracking license customers and qualifying former
+   * Premium Plan projects with Asset Tracking capabilities. See <a
+   * href="https://developers.google.com/maps/documentation/roads/speed-limits">Speed Limits
+   * eligibility</a> and <a
+   * href="https://developers.google.com/maps/documentation/roads/usage-and-billing">usage and
+   * billing</a>, and confirm your project's access with Google before integrating.
+   *
    * <p>Note: The accuracy of speed limit data returned by the Google Maps Roads API cannot be
    * guaranteed. Speed limit data provided is not real-time, and may be estimated, inaccurate,
    * incomplete, and/or outdated. Inaccuracies in our data may be reported through <a
@@ -86,6 +93,13 @@ public class RoadsApi {
 
   /**
    * Returns the posted speed limit for given road segments.
+   *
+   * <p>This is a limited-access service for Asset Tracking license customers and qualifying former
+   * Premium Plan projects with Asset Tracking capabilities. See <a
+   * href="https://developers.google.com/maps/documentation/roads/speed-limits">Speed Limits
+   * eligibility</a> and <a
+   * href="https://developers.google.com/maps/documentation/roads/usage-and-billing">usage and
+   * billing</a>, and confirm your project's access with Google before integrating.
    *
    * <p>Note: The accuracy of speed limit data returned by the Google Maps Roads API cannot be
    * guaranteed. Speed limit data provided is not real-time, and may be estimated, inaccurate,
