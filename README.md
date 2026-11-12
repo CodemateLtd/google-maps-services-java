@@ -53,7 +53,7 @@ As well as the following legacy APIs:
 ### API Key Security
 
 The Java Client for Google Maps Services is designed for use in both server and Android applications.
-In either case, it is important to add [API key restrictions](https://developers.google.com/maps/api-security-best-practices?hl=it)
+In either case, it is important to add [API key restrictions](https://developers.google.com/maps/api-security-best-practices)
 to improve the security of your API key. Additional security measures, such as hiding your key
 from version control, should also be put in place to further improve the security of your API key.
 
