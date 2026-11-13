@@ -30,6 +30,7 @@ import com.google.maps.model.Size;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.imageio.ImageIO;
 import org.junit.Test;
@@ -62,6 +63,21 @@ public class StaticMapsApiTest {
       assertNotNull(img);
       assertEquals(WIDTH, img.getWidth());
       assertEquals(HEIGHT, img.getHeight());
+    }
+  }
+
+  @Test
+  public void testMapIdReplacesCustomAndEarlierIds() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(IMAGE)) {
+      StaticMapsApi.newRequest(sc.context, new Size(WIDTH, HEIGHT))
+          .center(SYDNEY)
+          .zoom(16)
+          .custom("map_id", "1111111111111111")
+          .mapId("2222222222222222")
+          .mapId("3333333333333333")
+          .await();
+
+      sc.assertParamValues(Collections.singletonList("3333333333333333"), "map_id");
     }
   }
 
