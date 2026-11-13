@@ -23,6 +23,7 @@ import com.google.maps.model.ComponentFilter;
 import com.google.maps.model.GeocodingResponse;
 import com.google.maps.model.LatLng;
 import com.google.maps.model.LocationType;
+import java.util.List;
 
 /** A request for the Geocoding API. */
 public class GeocodingApiRequest
@@ -153,13 +154,63 @@ public class GeocodingApiRequest
   }
 
   /**
-   * Determines whether the address descriptor is returned in the response.
+   * Appends extra computations to request additional features in the response.
    *
-   * @param enableAddressDescriptor Flag to determine whether to return the address descriptor in
-   *     the response.
+   * <p>Each value is sent as a separate {@code extra_computations} parameter, in the order
+   * supplied. Repeated calls append to the existing values, including duplicates, rather than
+   * replacing them. Use {@code ADDRESS_DESCRIPTORS} to request address descriptors.
+   *
+   * <p>For current supported values, see <a
+   * href="https://developers.google.com/maps/documentation/geocoding/guides-v3/requests-geocoding">
+   * Geocoding optional parameters</a>.
+   *
+   * @param computations The extra computations to append.
+   * @return Returns this {@code GeocodingApiRequest} for call chaining.
+   */
+  public GeocodingApiRequest extraComputations(String... computations) {
+    for (String computation : computations) {
+      paramAddToList("extra_computations", computation);
+    }
+    return this;
+  }
+
+  /**
+   * Determines whether to request address descriptors using {@code
+   * extra_computations=ADDRESS_DESCRIPTORS}.
+   *
+   * <p>Enabling appends {@code ADDRESS_DESCRIPTORS} only if it is not already present. Disabling
+   * removes all occurrences of {@code ADDRESS_DESCRIPTORS}. Other extra computations retain their
+   * values and order.
+   *
+   * <p>For availability and response details, see <a
+   * href="https://developers.google.com/maps/documentation/geocoding/guides-v3/address-descriptors/requests-address-descriptors">
+   * Address descriptors</a>.
+   *
+   * @param enableAddressDescriptor Whether to request address descriptors in the response.
    * @return Returns this {@code GeocodingApiRequest} for call chaining.
    */
   public GeocodingApiRequest enableAddressDescriptor(boolean enableAddressDescriptor) {
-    return param("enable_address_descriptor", String.valueOf(enableAddressDescriptor));
+    List<String> computations = params().get("extra_computations");
+    if (enableAddressDescriptor) {
+      if (computations == null || !computations.contains("ADDRESS_DESCRIPTORS")) {
+        paramAddToList("extra_computations", "ADDRESS_DESCRIPTORS");
+      }
+    } else if (computations != null) {
+      int size = computations.size();
+      int retained = 0;
+      for (int i = 0; i < size; i++) {
+        String computation = computations.get(i);
+        if (!"ADDRESS_DESCRIPTORS".equals(computation)) {
+          if (retained != i) {
+            computations.set(retained, computation);
+          }
+          retained++;
+        }
+      }
+      for (int i = size - 1; i >= retained; i--) {
+        computations.remove(i);
+      }
+    }
+    return this;
   }
 }
