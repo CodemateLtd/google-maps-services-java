@@ -162,7 +162,8 @@ public class NearbySearchRequest
    * Restricts the results to places matching the specified type. Provides support for multiple
    * types.
    *
-   * @deprecated Multiple search types are ignored by the Places API.
+   * @deprecated Multiple search types are ignored by the Places API. Use {@link #type(PlaceType)}
+   *     to specify a single supported search type.
    * @param types The {@link PlaceType}s to restrict results to.
    * @return Returns this {@code NearbyApiRequest} for call chaining.
    */

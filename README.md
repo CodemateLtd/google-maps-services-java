@@ -105,6 +105,9 @@ Maven Central](https://search.maven.org/#search%7Cga%7C1%7Ca%3A%22google-maps-se
 
 View the [javadoc](https://www.javadoc.io/doc/com.google.maps/google-maps-services).
 
+For deprecated Java symbols, see [Deprecation guidance](#deprecation-guidance) below and the
+individual Javadocs for replacements or features with no equivalent.
+
 Additional documentation for the included web services is available at
 <https://developers.google.com/maps/>.
 
@@ -116,6 +119,30 @@ Additional documentation for the included web services is available at
 - [Places API]
 - [Roads API]
 - [Time Zone API]
+
+### Deprecation guidance
+
+These recommendations concern individual Java symbols, not service migrations:
+
+- Replace `PlaceDetailsRequest.FieldMask.ID` and `REFERENCE` with `PLACE_ID`, and `REVIEW`
+  with `REVIEWS` (the documented `reviews` field).
+- Replace `PERMANENTLY_CLOSED` field masks with `BUSINESS_STATUS` and read
+  `PlaceDetails.businessStatus` instead of `permanentlyClosed`. Status can be `OPERATIONAL`,
+  `CLOSED_TEMPORARILY`, or `CLOSED_PERMANENTLY`; missing status means unavailable, not operational.
+- `ALT_ID`, `SCOPE`, `PlaceDetails.AlternatePlaceIds`, `altIds`, and the scope fields and
+  `PlaceIdScope` enum belong to the discontinued Place Add feature and have no equivalent.
+  A primary `placeId` identifies a place but does not replace alternate IDs or their scopes.
+  See the [official field deprecations](https://developers.google.com/maps/deprecations#places_fields_reference_id_alt_id_scope_-)
+  and [current Place Details fields](https://developers.google.com/maps/documentation/places/web-service/legacy/details#fields).
+- Use `NearbySearchRequest.type(PlaceType)` rather than its varargs overload: only one search
+  type is supported. `ESTABLISHMENT`, `FINANCE`, `FOOD`, `GENERAL_CONTRACTOR`, `HEALTH`, and
+  `PLACE_OF_WORSHIP` remain valid response types, but are not supported legacy place-search
+  filters. There is no universal replacement; choose a suitable
+  [Table 1 search type](https://developers.google.com/maps/documentation/places/web-service/legacy/supported_types#table1).
+  `establishment` also has an Autocomplete-specific filtering use.
+- `DirectionsStep.maneuver` remains deprecated in this client with no replacement. The
+  [official response reference](https://developers.google.com/maps/documentation/directions/responses#DirectionsStep)
+  now documents this optional field; values may change or be added without notice.
 
 ## Usage
 

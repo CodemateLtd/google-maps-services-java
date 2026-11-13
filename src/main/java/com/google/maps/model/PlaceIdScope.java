@@ -15,7 +15,13 @@
 
 package com.google.maps.model;
 
-/** The scope of a Place ID returned from the Google Places API Web Service. */
+/**
+ * The historical scope of a Place ID returned from the Google Places API Web Service.
+ *
+ * @deprecated The discontinued Place Add service's scope has no equivalent. Use primary place IDs
+ *     such as {@link PlaceDetails#placeId} without an application/Google scope distinction; there
+ *     is no replacement scope enum.
+ */
 @Deprecated
 public enum PlaceIdScope {
   /**

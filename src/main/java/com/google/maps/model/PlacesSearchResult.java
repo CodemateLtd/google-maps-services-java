@@ -53,7 +53,12 @@ public class PlacesSearchResult implements Serializable {
   /** A textual identifier that uniquely identifies a place. */
   public String placeId;
 
-  /** The scope of the placeId. */
+  /**
+   * The historical scope of the place ID.
+   *
+   * @deprecated The discontinued Place Add service's scope has no equivalent. Use {@link #placeId}
+   *     for identity without preserving an application-scope distinction.
+   */
   @Deprecated public PlaceIdScope scope;
 
   /** The place's rating, from 1.0 to 5.0, based on aggregated user reviews. */
