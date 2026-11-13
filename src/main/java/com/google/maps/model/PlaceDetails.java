@@ -91,7 +91,12 @@ public class PlaceDetails implements Serializable {
   /** The regular hours of operation. */
   public OpeningHours openingHours;
 
-  /** Whether the place has permanently closed. */
+  /**
+   * Whether the place has permanently closed.
+   *
+   * @deprecated Use {@link #businessStatus}: {@code OPERATIONAL}, {@code CLOSED_TEMPORARILY}, or
+   *     {@code CLOSED_PERMANENTLY}. A missing status means status is unavailable, not operational.
+   */
   @Deprecated public boolean permanentlyClosed;
 
   /** A list of photos associated with this place, each containing a reference to an image. */
@@ -100,7 +105,12 @@ public class PlaceDetails implements Serializable {
   /** A textual identifier that uniquely identifies this place. */
   public String placeId;
 
-  /** The scope of the placeId. */
+  /**
+   * The historical scope of the place ID.
+   *
+   * @deprecated The discontinued Place Add service's scope has no equivalent. Use {@link #placeId}
+   *     for identity without preserving an application-scope distinction.
+   */
   @Deprecated public PlaceIdScope scope;
 
   /** The Plus Code location identifier for this place. */
@@ -112,21 +122,24 @@ public class PlaceDetails implements Serializable {
    */
   public PriceLevel priceLevel;
 
+  /**
+   * Historical alternate place IDs from the discontinued Place Add service.
+   *
+   * @deprecated There is no equivalent alternate-ID model. {@link PlaceDetails#placeId} is the
+   *     primary identifier, not a replacement for the historical alternate-ID collection.
+   */
   @Deprecated
   public static class AlternatePlaceIds implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * The alternative placeId. The most likely reason for a place to have an alternative place ID
-     * is if your application adds a place and receives an application-scoped place ID, then later
-     * receives a Google-scoped place ID after passing the moderation process.
-     */
+    /** The historical alternative place ID from the discontinued Place Add service. */
     public String placeId;
 
     /**
-     * The scope of an alternative place ID will always be APP, indicating that the alternative
-     * place ID is recognised by your application only.
+     * The historical application scope of an alternative place ID.
+     *
+     * @deprecated The discontinued Place Add service's scope has no equivalent.
      */
     @Deprecated public PlaceIdScope scope;
 
@@ -137,8 +150,10 @@ public class PlaceDetails implements Serializable {
   }
 
   /**
-   * An optional array of alternative place IDs for the place, with a scope related to each
-   * alternative ID.
+   * Historical alternative place IDs and their scopes.
+   *
+   * @deprecated The discontinued Place Add service's alternate-ID array has no equivalent. {@link
+   *     #placeId} is the primary identifier, not an alternate-ID collection.
    */
   @Deprecated public AlternatePlaceIds[] altIds;
 

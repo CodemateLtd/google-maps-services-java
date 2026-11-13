@@ -142,6 +142,10 @@ public class PlaceDetailsRequest
   public enum FieldMask implements UrlValue {
     ADDRESS_COMPONENT("address_component"),
     ADR_ADDRESS("adr_address"),
+    /**
+     * @deprecated The alternate-ID feature belonged to the discontinued Place Add service and has
+     *     no equivalent. {@link #PLACE_ID} requests the primary identifier, not alternate IDs.
+     */
     @Deprecated
     ALT_ID("alt_id"),
     BUSINESS_STATUS("business_status"),
@@ -163,6 +167,7 @@ public class PlaceDetailsRequest
     GEOMETRY_VIEWPORT_SOUTHWEST_LAT("geometry/viewport/southwest/lat"),
     GEOMETRY_VIEWPORT_SOUTHWEST_LNG("geometry/viewport/southwest/lng"),
     ICON("icon"),
+    /** @deprecated Use {@link #PLACE_ID} for the place identifier. */
     @Deprecated
     ID("id"),
     INTERNATIONAL_PHONE_NUMBER("international_phone_number"),
@@ -170,6 +175,10 @@ public class PlaceDetailsRequest
     OPENING_HOURS("opening_hours"),
     CURRENT_OPENING_HOURS("current_opening_hours"),
     SECONDARY_OPENING_HOURS("secondary_opening_hours"),
+    /**
+     * @deprecated Use {@link #BUSINESS_STATUS} for operational, temporarily closed, or permanently
+     *     closed status. The status is optional; an absent status does not mean operational.
+     */
     @Deprecated
     PERMANENTLY_CLOSED("permanently_closed"),
     USER_RATINGS_TOTAL("user_ratings_total"),
@@ -178,12 +187,18 @@ public class PlaceDetailsRequest
     PLUS_CODE("plus_code"),
     PRICE_LEVEL("price_level"),
     RATING("rating"),
+    /** @deprecated Use {@link #PLACE_ID} for the place identifier. */
     @Deprecated
     REFERENCE("reference"),
     RESERVABLE("reservable"),
+    /** @deprecated Use {@link #REVIEWS} for the documented {@code reviews} field. */
     @Deprecated
     REVIEW("review"),
     REVIEWS("reviews"),
+    /**
+     * @deprecated The scope field belonged to the discontinued Place Add service and has no
+     *     equivalent. {@link #PLACE_ID} requests identity without an application-scope distinction.
+     */
     @Deprecated
     SCOPE("scope"),
     SERVES_BEER("serves_beer"),

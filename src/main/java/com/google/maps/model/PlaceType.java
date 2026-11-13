@@ -53,23 +53,54 @@ public enum PlaceType implements StringJoin.UrlValue {
   ELECTRICIAN("electrician"),
   ELECTRONICS_STORE("electronics_store"),
   EMBASSY("embassy"),
+  /**
+   * @deprecated Still a valid response type, but not a supported legacy place-search filter. There
+   *     is no one-to-one replacement; choose a supported <a
+   *     href="https://developers.google.com/maps/documentation/places/web-service/legacy/supported_types#table1">
+   *     Table 1 type</a> matching the intended search. Autocomplete supports {@code establishment}
+   *     under its own type-filter rules.
+   */
   @Deprecated
   ESTABLISHMENT("establishment"),
+  /**
+   * @deprecated Still a valid response type, but not a supported legacy place-search filter. There
+   *     is no one-to-one replacement; choose a supported <a
+   *     href="https://developers.google.com/maps/documentation/places/web-service/legacy/supported_types#table1">
+   *     Table 1 type</a> matching the intended search.
+   */
   @Deprecated
   FINANCE("finance"),
   FIRE_STATION("fire_station"),
   FLORIST("florist"),
+  /**
+   * @deprecated Still a valid response type, but not a supported legacy place-search filter. There
+   *     is no one-to-one replacement; choose a supported <a
+   *     href="https://developers.google.com/maps/documentation/places/web-service/legacy/supported_types#table1">
+   *     Table 1 type</a> matching the intended search.
+   */
   @Deprecated
   FOOD("food"),
   FUNERAL_HOME("funeral_home"),
   FURNITURE_STORE("furniture_store"),
   GAS_STATION("gas_station"),
+  /**
+   * @deprecated Still a valid response type, but not a supported legacy place-search filter. There
+   *     is no one-to-one replacement; choose a supported <a
+   *     href="https://developers.google.com/maps/documentation/places/web-service/legacy/supported_types#table1">
+   *     Table 1 type</a> matching the intended search.
+   */
   @Deprecated
   GENERAL_CONTRACTOR("general_contractor"),
   GROCERY_OR_SUPERMARKET("grocery_or_supermarket"),
   GYM("gym"),
   HAIR_CARE("hair_care"),
   HARDWARE_STORE("hardware_store"),
+  /**
+   * @deprecated Still a valid response type, but not a supported legacy place-search filter. There
+   *     is no one-to-one replacement; choose a supported <a
+   *     href="https://developers.google.com/maps/documentation/places/web-service/legacy/supported_types#table1">
+   *     Table 1 type</a> matching the intended search.
+   */
   @Deprecated
   HEALTH("health"),
   HINDU_TEMPLE("hindu_temple"),
@@ -99,6 +130,12 @@ public enum PlaceType implements StringJoin.UrlValue {
   PET_STORE("pet_store"),
   PHARMACY("pharmacy"),
   PHYSIOTHERAPIST("physiotherapist"),
+  /**
+   * @deprecated Still a valid response type, but not a supported legacy place-search filter. There
+   *     is no one-to-one replacement; choose a supported <a
+   *     href="https://developers.google.com/maps/documentation/places/web-service/legacy/supported_types#table1">
+   *     Table 1 type</a> matching the intended search.
+   */
   @Deprecated
   PLACE_OF_WORSHIP("place_of_worship"),
   PLUMBER("plumber"),

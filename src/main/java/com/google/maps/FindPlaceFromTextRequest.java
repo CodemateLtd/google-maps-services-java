@@ -141,6 +141,10 @@ public class FindPlaceFromTextRequest
     ID("id"),
     NAME("name"),
     OPENING_HOURS("opening_hours"),
+    /**
+     * @deprecated Use {@link #BUSINESS_STATUS} for operational, temporarily closed, or permanently
+     *     closed status. The status is optional; an absent status does not mean operational.
+     */
     @Deprecated
     PERMANENTLY_CLOSED("permanently_closed"),
     PHOTOS("photos"),

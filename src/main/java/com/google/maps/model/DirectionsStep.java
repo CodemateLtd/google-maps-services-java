@@ -47,8 +47,12 @@ public class DirectionsStep implements Serializable {
   public Distance distance;
 
   /**
-   * The maneuver required to move ahead. E.g., turn-left. Please note, this field is undocumented,
-   * and thus should not be relied upon.
+   * The optional maneuver required to move ahead, for example {@code turn-left}.
+   *
+   * @deprecated Retained as deprecated in this client; no replacement is provided. The field is now
+   *     documented in the <a
+   *     href="https://developers.google.com/maps/documentation/directions/responses#DirectionsStep">
+   *     Directions API response reference</a>, but values may change or be added without notice.
    */
   @Deprecated public String maneuver;
 
