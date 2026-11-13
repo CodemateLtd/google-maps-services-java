@@ -34,6 +34,7 @@ import com.google.maps.model.LatLng;
 import com.google.maps.model.LocationType;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import okhttp3.Headers;
@@ -1211,6 +1212,174 @@ public class GeocodingApiTest {
     }
   }
 
+  @Test
+  public void testExtraComputationsAccumulateInOrderAndEncodeValues() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      // Serialization sentinels, not supported service computation names.
+      String encodedValue = "test &+=/雪|?%";
+      GeocodingApi.newRequest(sc.context)
+          .address("Sydney")
+          .extraComputations("test-first", encodedValue)
+          .extraComputations("test-first", "ADDRESS_DESCRIPTORS")
+          .await();
+
+      sc.assertParamValues(
+          Arrays.asList("test-first", encodedValue, "test-first", "ADDRESS_DESCRIPTORS"),
+          "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+      assertEquals("/maps/api/geocode/json", sc.path());
+    }
+  }
+
+  @Test
+  public void testEmptyExtraComputationsDoNotSendParameter() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      GeocodingApi.newRequest(sc.context).address("Sydney").extraComputations().await();
+
+      sc.assertParamValues(Collections.emptyList(), "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+    }
+  }
+
+  @Test
+  public void testEnableAddressDescriptorIsIdempotentAcrossToggles() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      GeocodingApi.newRequest(sc.context)
+          .address("Sydney")
+          .enableAddressDescriptor(true)
+          .enableAddressDescriptor(true)
+          .enableAddressDescriptor(false)
+          .enableAddressDescriptor(false)
+          .enableAddressDescriptor(true)
+          .enableAddressDescriptor(true)
+          .await();
+
+      sc.assertParamValues(Collections.singletonList("ADDRESS_DESCRIPTORS"), "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+    }
+  }
+
+  @Test
+  public void testDisableAddressDescriptorDoesNotSendEmptyParameter() throws Exception {
+    boolean[][] toggles = {{false}, {true, false}, {true, false, true, false}};
+    for (boolean[] sequence : toggles) {
+      try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+        GeocodingApiRequest request = GeocodingApi.newRequest(sc.context).address("Sydney");
+        for (boolean enabled : sequence) {
+          request.enableAddressDescriptor(enabled);
+        }
+        request.await();
+
+        sc.assertParamValues(Collections.emptyList(), "extra_computations");
+        sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+      }
+    }
+  }
+
+  @Test
+  public void testEnableAddressDescriptorPreservesExistingComputations() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      GeocodingApi.newRequest(sc.context)
+          .address("Sydney")
+          .extraComputations("test-first", "ADDRESS_DESCRIPTORS", "ADDRESS_DESCRIPTORS")
+          .enableAddressDescriptor(true)
+          .extraComputations("test-last")
+          .enableAddressDescriptor(true)
+          .await();
+
+      sc.assertParamValues(
+          Arrays.asList("test-first", "ADDRESS_DESCRIPTORS", "ADDRESS_DESCRIPTORS", "test-last"),
+          "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+    }
+  }
+
+  @Test
+  public void testExtraComputationsAppendAfterDescriptorHelper() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      GeocodingApi.newRequest(sc.context)
+          .address("Sydney")
+          .enableAddressDescriptor(true)
+          .extraComputations("test-first", "ADDRESS_DESCRIPTORS")
+          .extraComputations("test-last")
+          .enableAddressDescriptor(true)
+          .await();
+
+      sc.assertParamValues(
+          Arrays.asList("ADDRESS_DESCRIPTORS", "test-first", "ADDRESS_DESCRIPTORS", "test-last"),
+          "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+    }
+  }
+
+  @Test
+  public void testDisableAddressDescriptorRemovesAllOccurrencesAndPreservesOthers()
+      throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      GeocodingApi.newRequest(sc.context)
+          .address("Sydney")
+          .enableAddressDescriptor(true)
+          .extraComputations(
+              "test-first", "ADDRESS_DESCRIPTORS", "test-last", "ADDRESS_DESCRIPTORS")
+          .enableAddressDescriptor(false)
+          .enableAddressDescriptor(false)
+          .await();
+
+      sc.assertParamValues(Arrays.asList("test-first", "test-last"), "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+    }
+  }
+
+  @Test
+  public void testEnableAddressDescriptorAppendsWithoutReplacingOtherComputations()
+      throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      GeocodingApi.newRequest(sc.context)
+          .address("Sydney")
+          .extraComputations("test-first", "test-last")
+          .enableAddressDescriptor(false)
+          .enableAddressDescriptor(true)
+          .await();
+
+      sc.assertParamValues(
+          Arrays.asList("test-first", "test-last", "ADDRESS_DESCRIPTORS"), "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+    }
+  }
+
+  @Test
+  public void testCustomExtraComputationsStillReplacesValues() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      GeocodingApi.newRequest(sc.context)
+          .address("Sydney")
+          .extraComputations("test-discarded", "ADDRESS_DESCRIPTORS")
+          .custom("extra_computations", "test-replaced")
+          .custom("extra_computations", "test-retained")
+          .extraComputations("test-appended")
+          .enableAddressDescriptor(true)
+          .await();
+
+      sc.assertParamValues(
+          Arrays.asList("test-retained", "test-appended", "ADDRESS_DESCRIPTORS"),
+          "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+    }
+  }
+
+  @Test
+  public void testDescriptorHelperRecognizesCustomComputation() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      GeocodingApi.newRequest(sc.context)
+          .address("Sydney")
+          .custom("extra_computations", "ADDRESS_DESCRIPTORS")
+          .enableAddressDescriptor(true)
+          .await();
+
+      sc.assertParamValues(Collections.singletonList("ADDRESS_DESCRIPTORS"), "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+    }
+  }
+
   /** Testing Address Descriptors in reverse geocode. */
   @Test
   public void testReverseGeocodeWithAddressDescriptors() throws Exception {
@@ -1236,6 +1405,9 @@ public class GeocodingApiTest {
       assertEquals(AddressComponentType.WARD, results[3].addressComponents[0].types[2]);
 
       sc.assertParamValue(location.toUrlValue(), "latlng");
+      sc.assertParamValues(Collections.singletonList("ADDRESS_DESCRIPTORS"), "extra_computations");
+      sc.assertParamValues(Collections.emptyList(), "enable_address_descriptor");
+      assertEquals("/maps/api/geocode/json", sc.path());
 
       assertNotNull(response.addressDescriptor);
       assertEquals("ChIJvUbrwCCoAWARX2QiHCsn5A4", response.addressDescriptor.landmarks[0].placeId);
