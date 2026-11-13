@@ -605,6 +605,20 @@ public class GeoApiContext implements Closeable {
       return this;
     }
 
+    /**
+     * Selects the reporter used to create metrics for each request.
+     *
+     * <p>The default reporter is a no-op. To use the bundled OpenCensus reporter, supply a {@link
+     * com.google.maps.metrics.OpenCensusRequestMetricsReporter}, register its views with {@link
+     * com.google.maps.metrics.OpenCensusMetrics#registerAllViews()}, and configure an OpenCensus
+     * implementation and any exporter in the application.
+     *
+     * <p>The application owns custom reporter and telemetry resources. Shutting down the context
+     * shuts down its request handler, not the reporter or exporter, and does not flush metrics.
+     *
+     * @param requestMetricsReporter The reporter to use for new requests.
+     * @return Returns this builder for call chaining.
+     */
     public Builder requestMetricsReporter(RequestMetricsReporter requestMetricsReporter) {
       this.requestMetricsReporter = requestMetricsReporter;
       return this;
