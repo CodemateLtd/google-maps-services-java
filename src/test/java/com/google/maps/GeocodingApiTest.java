@@ -18,6 +18,7 @@ package com.google.maps;
 import static com.google.maps.TestUtils.retrieveBody;
 import static com.google.maps.model.ComponentFilter.administrativeArea;
 import static com.google.maps.model.ComponentFilter.country;
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -66,6 +67,69 @@ public class GeocodingApiTest {
   }
 
   @Test
+  public void testAddressAndLatLngRejectedInBothOrders() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      LatLng latlng = new LatLng(-33.8674869, 151.2069902);
+      assertRejectedBeforeDispatch(
+          GeocodingApi.newRequest(sc.context).address("Sydney").latlng(latlng), sc);
+      assertRejectedBeforeDispatch(
+          GeocodingApi.newRequest(sc.context).latlng(latlng).address("Sydney"), sc);
+    }
+  }
+
+  @Test
+  public void testAddressAndPlaceRejectedInBothOrders() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      String placeId = "ChIJP3Sa8ziYEmsRUKgyFmh9AQM";
+      assertRejectedBeforeDispatch(
+          GeocodingApi.newRequest(sc.context).address("Sydney").place(placeId), sc);
+      assertRejectedBeforeDispatch(
+          GeocodingApi.newRequest(sc.context).place(placeId).address("Sydney"), sc);
+    }
+  }
+
+  @Test
+  public void testLatLngAndPlaceRejectedInBothOrders() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      LatLng latlng = new LatLng(-33.8674869, 151.2069902);
+      String placeId = "ChIJP3Sa8ziYEmsRUKgyFmh9AQM";
+      assertRejectedBeforeDispatch(
+          GeocodingApi.newRequest(sc.context).latlng(latlng).place(placeId), sc);
+      assertRejectedBeforeDispatch(
+          GeocodingApi.newRequest(sc.context).place(placeId).latlng(latlng), sc);
+    }
+  }
+
+  @Test
+  public void testAllInputSelectorsRejected() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      assertRejectedBeforeDispatch(
+          GeocodingApi.newRequest(sc.context)
+              .address("Sydney")
+              .latlng(new LatLng(-33.8674869, 151.2069902))
+              .place("ChIJP3Sa8ziYEmsRUKgyFmh9AQM"),
+          sc);
+    }
+  }
+
+  @Test
+  public void testMissingInputRejected() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(simpleGeocodeResponse)) {
+      assertRejectedBeforeDispatch(GeocodingApi.newRequest(sc.context), sc);
+    }
+  }
+
+  private void assertRejectedBeforeDispatch(GeocodingApiRequest request, LocalTestServerContext sc)
+      throws Exception {
+    try {
+      request.await();
+      fail("Expected an IllegalArgumentException for invalid geocoding inputs");
+    } catch (IllegalArgumentException expected) {
+      sc.assertNoRequests();
+    }
+  }
+
+  @Test
   public void testGeocodeLibraryType() throws Exception {
     try (LocalTestServerContext sc = new LocalTestServerContext(geocodeLibraryType)) {
       GeocodingResult[] results =
@@ -89,6 +153,8 @@ public class GeocodingApiTest {
       assertNotNull(Arrays.toString(results));
 
       sc.assertParamValue("Sydney", "address");
+      sc.assertParamValues(emptyList(), "latlng");
+      sc.assertParamValues(emptyList(), "place_id");
     }
   }
 
@@ -101,6 +167,8 @@ public class GeocodingApiTest {
       checkSydneyResult(results);
 
       sc.assertParamValue(placeID, "place_id");
+      sc.assertParamValues(emptyList(), "address");
+      sc.assertParamValues(emptyList(), "latlng");
     }
   }
 
@@ -221,6 +289,8 @@ public class GeocodingApiTest {
       assertEquals("Sydney NSW 2000, Australia", results[2].formattedAddress);
 
       sc.assertParamValue(latlng.toUrlValue(), "latlng");
+      sc.assertParamValues(emptyList(), "address");
+      sc.assertParamValues(emptyList(), "place_id");
     }
   }
 
@@ -584,6 +654,8 @@ public class GeocodingApiTest {
 
       sc.assertParamValue("country:ES", "components");
       sc.assertParamValue("santa cruz", "address");
+      sc.assertParamValues(emptyList(), "latlng");
+      sc.assertParamValues(emptyList(), "place_id");
     }
   }
 
@@ -761,6 +833,9 @@ public class GeocodingApiTest {
 
       sc.assertParamValue(
           "route:Annegatan|administrative_area:Helsinki|country:Finland", "components");
+      sc.assertParamValues(emptyList(), "address");
+      sc.assertParamValues(emptyList(), "latlng");
+      sc.assertParamValues(emptyList(), "place_id");
     }
   }
 

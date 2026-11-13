@@ -138,6 +138,10 @@ public class LocalTestServerContext implements AutoCloseable {
     assertEquals(paramsFound, expecteds.size());
   }
 
+  void assertNoRequests() {
+    assertEquals(0, server.getRequestCount());
+  }
+
   @Override
   public void close() {
     try {

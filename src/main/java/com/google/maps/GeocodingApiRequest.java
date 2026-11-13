@@ -23,6 +23,8 @@ import com.google.maps.model.ComponentFilter;
 import com.google.maps.model.GeocodingResponse;
 import com.google.maps.model.LatLng;
 import com.google.maps.model.LocationType;
+import java.util.List;
+import java.util.Map;
 
 /** A request for the Geocoding API. */
 public class GeocodingApiRequest
@@ -36,19 +38,25 @@ public class GeocodingApiRequest
 
   @Override
   protected void validateRequest() {
-    // Must not have both address and latlng.
-    if (params().containsKey("latlng")
-        && params().containsKey("address")
-        && params().containsKey("place_id")) {
+    // At most one input selector may be specified; components are checked separately below.
+    Map<String, List<String>> parameters = params();
+    int inputSelectors = 0;
+    if (parameters.containsKey("address")) {
+      inputSelectors++;
+    }
+    if (parameters.containsKey("latlng")) {
+      inputSelectors++;
+    }
+    if (parameters.containsKey("place_id")) {
+      inputSelectors++;
+    }
+    if (inputSelectors > 1) {
       throw new IllegalArgumentException(
-          "Request must contain only one of 'address', 'latlng' or 'place_id'.");
+          "Request must not contain more than one of 'address', 'latlng' or 'place_id'.");
     }
 
-    // Must contain at least one of place_id, address, latlng, and components;
-    if (!params().containsKey("latlng")
-        && !params().containsKey("address")
-        && !params().containsKey("components")
-        && !params().containsKey("place_id")) {
+    // Must contain at least one of place_id, address, latlng, and components.
+    if (inputSelectors == 0 && !parameters.containsKey("components")) {
       throw new IllegalArgumentException(
           "Request must contain at least one of 'address', 'latlng', 'place_id' and 'components'.");
     }
@@ -56,6 +64,9 @@ public class GeocodingApiRequest
 
   /**
    * Creates a forward geocode for {@code address}.
+   *
+   * <p>This request must not also specify {@link #latlng(LatLng)} or {@link #place(String)}.
+   * Component filters may be used with the address or on their own.
    *
    * @param address The address to geocode.
    * @return Returns this {@code GeocodingApiRequest} for call chaining.
@@ -67,6 +78,8 @@ public class GeocodingApiRequest
   /**
    * Creates a forward geocode for {@code placeId}.
    *
+   * <p>This request must not also specify {@link #address(String)} or {@link #latlng(LatLng)}.
+   *
    * @param placeId The Place ID to geocode.
    * @return Returns this {@code GeocodingApiRequest} for call chaining.
    */
@@ -76,6 +89,8 @@ public class GeocodingApiRequest
 
   /**
    * Creates a reverse geocode for {@code latlng}.
+   *
+   * <p>This request must not also specify {@link #address(String)} or {@link #place(String)}.
    *
    * @param latlng The location to reverse geocode.
    * @return Returns this {@code GeocodingApiRequest} for call chaining.
@@ -118,6 +133,8 @@ public class GeocodingApiRequest
   /**
    * Sets the component filters. Each component filter consists of a component:value pair and will
    * fully restrict the results from the geocoder.
+   *
+   * <p>Component filters may be used on their own or together with {@link #address(String)}.
    *
    * <p>For more information see <a
    * href="https://developers.google.com/maps/documentation/geocoding/intro?hl=pl#ComponentFiltering">
