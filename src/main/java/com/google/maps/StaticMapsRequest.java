@@ -157,6 +157,20 @@ public class StaticMapsRequest
   }
 
   /**
+   * <code>map_id</code> specifies the map ID to use. The map ID must belong to the same Google
+   * Cloud project as the API key.
+   *
+   * @param mapId The map ID for the static map.
+   * @return Returns this {@code StaticMapsRequest} for call chaining.
+   * @see <a
+   *     href="https://developers.google.com/maps/documentation/maps-static/start#feature_parameters">
+   *     Maps Static API feature parameters</a>
+   */
+  public StaticMapsRequest mapId(String mapId) {
+    return param("map_id", mapId);
+  }
+
+  /**
    * <code>region</code> defines the appropriate borders to display, based on geo-political
    * sensitivities. Accepts a region code specified as a two-character ccTLD ('top-level domain')
    * value.
