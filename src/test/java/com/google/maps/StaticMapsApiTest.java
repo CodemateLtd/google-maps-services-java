@@ -17,6 +17,7 @@ package com.google.maps;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.google.maps.StaticMapsRequest.ImageFormat;
 import com.google.maps.StaticMapsRequest.Markers;
@@ -30,6 +31,7 @@ import com.google.maps.model.Size;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.imageio.ImageIO;
 import org.junit.Test;
@@ -102,6 +104,52 @@ public class StaticMapsApiTest {
       sc.assertParamValue("hybrid", "maptype");
       sc.assertParamValue("AU", "region");
       sc.assertParamValue("Melbourne", "visible");
+    }
+  }
+
+  @Test
+  public void testRepeatedStylesPreserveOrderAndImage() throws Exception {
+    IMAGE.setRGB(0, 0, 0xff336699);
+    try (LocalTestServerContext sc = new LocalTestServerContext(IMAGE)) {
+      String roadStyle = "feature:road.local|element:geometry|color:0x00ff00";
+      String waterStyle = "feature:water|hue:#00aaff";
+      ImageResult result =
+          StaticMapsApi.newRequest(sc.context, new Size(WIDTH, HEIGHT))
+              .center(SYDNEY)
+              .zoom(16)
+              .style(roadStyle)
+              .style(waterStyle)
+              .await();
+
+      sc.assertParamValues(Arrays.asList(roadStyle, waterStyle), "style");
+      assertTrue(
+          sc.query()
+              .contains(
+                  "style=feature%3Aroad.local%7Celement%3Ageometry%7Ccolor%3A0x00ff00"
+                      + "&style=feature%3Awater%7Chue%3A%2300aaff"));
+
+      BufferedImage image = ImageIO.read(new ByteArrayInputStream(result.imageData));
+      assertNotNull(image);
+      assertEquals(WIDTH, image.getWidth());
+      assertEquals(HEIGHT, image.getHeight());
+      assertEquals(IMAGE.getRGB(0, 0), image.getRGB(0, 0));
+    }
+  }
+
+  @Test
+  public void testCustomStyleReplacesRulesBeforeFurtherAppends() throws Exception {
+    try (LocalTestServerContext sc = new LocalTestServerContext(IMAGE)) {
+      StaticMapsApi.newRequest(sc.context, new Size(WIDTH, HEIGHT))
+          .center(SYDNEY)
+          .zoom(16)
+          .style("feature:poi|visibility:off")
+          .custom("style", "feature:landscape|visibility:off")
+          .style("feature:water|visibility:on")
+          .await();
+
+      sc.assertParamValues(
+          Arrays.asList("feature:landscape|visibility:off", "feature:water|visibility:on"),
+          "style");
     }
   }
 

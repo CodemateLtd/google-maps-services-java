@@ -103,6 +103,11 @@ public class LocalTestServerContext implements AutoCloseable {
     return request.getPath().split("\\?", -1)[0];
   }
 
+  public String query() throws InterruptedException {
+    this.takeRequest();
+    return request.getRequestUrl().encodedQuery();
+  }
+
   public Headers headers() throws InterruptedException {
     takeRequest();
     return request.getHeaders();
