@@ -168,6 +168,22 @@ public class StaticMapsRequest
     return param("region", region);
   }
 
+  /**
+   * Adds an inline style rule to customize the presentation of the map. Each call appends a
+   * separate {@code style} parameter, preserving the order of the rules.
+   *
+   * <p>Do not combine inline styling with cloud-based maps styling.
+   *
+   * @param style The raw style rule, with arguments separated by pipe characters ({@code |}). Do
+   *     not URL-encode the rule; encoding is handled by this request.
+   * @return Returns this {@code StaticMapsRequest} for call chaining.
+   * @see <a href="https://developers.google.com/maps/documentation/maps-static/styling">Maps Static
+   *     API inline styling guidance</a>
+   */
+  public StaticMapsRequest style(String style) {
+    return paramAddToList("style", style);
+  }
+
   public static class Markers implements UrlValue {
 
     public enum MarkersSize implements UrlValue {
