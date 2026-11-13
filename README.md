@@ -143,6 +143,74 @@ otherwise the thread will remain instantiated in memory.
 
 For more usage examples, check out [the tests](src/test/java/com/google/maps).
 
+### Optional request metrics
+
+Request metrics are **opt-in**; the default reporter is a no-op.
+The bundled reporter uses global OpenCensus services.
+[OpenCensus is archived](https://github.com/census-instrumentation/opencensus-java#readme);
+this documents the existing integration, not a recommendation for new telemetry systems.
+
+The library provides the OpenCensus API. Add its matching implementation at application runtime:
+
+```groovy
+dependencies {
+    runtimeOnly 'io.opencensus:opencensus-impl:0.31.1'
+}
+```
+
+Register the views once at application startup and select the reporter:
+
+```java
+import com.google.maps.GeoApiContext;
+import com.google.maps.metrics.OpenCensusMetrics;
+import com.google.maps.metrics.OpenCensusRequestMetricsReporter;
+
+OpenCensusMetrics.registerAllViews();
+GeoApiContext context = new GeoApiContext.Builder()
+    .apiKey("AIza...")
+    .requestMetricsReporter(new OpenCensusRequestMetricsReporter())
+    .build();
+
+// Shut down the context when the application has finished making requests.
+context.shutdown();
+```
+
+View registration enables local collection, not export. To send metrics to a monitoring system,
+add and configure your chosen [OpenCensus exporter](https://github.com/census-instrumentation/opencensus-java#how-to-setup-exporters)
+before requests. Local snapshots may update asynchronously.
+
+#### Metric contract
+
+The four exported **view names** are:
+
+| View name | Aggregation | Values and units |
+| --- | --- | --- |
+| `maps.googleapis.com/client/request_count` | Count | Completed requests (count, `1`). |
+| `maps.googleapis.com/client/request_latency` | Distribution | Total elapsed request time, milliseconds (`ms`). |
+| `maps.googleapis.com/client/network_latency` | Distribution | Accumulated instrumented attempt time, milliseconds (`ms`). |
+| `maps.googleapis.com/client/retry_count` | Distribution | Retries per completed request, count (`1`), not a cumulative counter. |
+
+See [`OpenCensusMetrics`](src/main/java/com/google/maps/metrics/OpenCensusMetrics.java)
+for view and histogram definitions.
+
+All four views group samples by the same three tags:
+
+| Tag | Value |
+| --- | --- |
+| `request_name` | The configured API path, for example `/maps/api/geocode/json`, not the full URL, query or API key. |
+| `http_code` | The decimal string of the reported HTTP status, for example `"200"` or `"500"`. OkHttp I/O failures reported without a response use `"0"`. |
+| `api_status` | `""` on success (no exception); otherwise the exception's fully qualified Java class name, for example `com.google.maps.errors.InvalidRequestException`. This is **not** the raw Maps response status and success is not `"OK"`. |
+
+Latencies use wall-clock milliseconds; network intervals can include client work and retry
+backoff, not just wire time. Only the first completion records metrics. GAE does not support
+callbacks and can miss failed-future completion metrics, so failure coverage differs from OkHttp.
+
+Custom `RequestMetricsReporter` implementations must follow the
+[`RequestMetrics`](src/main/java/com/google/maps/metrics/RequestMetrics.java) retry and first-completion contract.
+The application owns reporter/exporter/provider resources, including required flush and shutdown
+after requests stop. `GeoApiContext.shutdown()` (also called by `close()`) stops the request
+handler only; it does not flush or shut down telemetry.
+
 ## Features
 
 ### Google App Engine Support
