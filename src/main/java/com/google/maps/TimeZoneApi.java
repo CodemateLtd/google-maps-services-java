@@ -20,6 +20,7 @@ import com.google.maps.errors.ApiException;
 import com.google.maps.internal.ApiConfig;
 import com.google.maps.internal.ApiResponse;
 import com.google.maps.model.LatLng;
+import com.google.maps.model.TimeZoneResult;
 import java.util.TimeZone;
 
 /**
@@ -38,6 +39,10 @@ public class TimeZoneApi {
   /**
    * Retrieves the {@link java.util.TimeZone} for the given location.
    *
+   * <p>This convenience method uses Java's rules for the returned time-zone ID. Use {@link
+   * #getTimeZoneResult(GeoApiContext, LatLng, long)} for the service's name and offsets at a
+   * particular timestamp.
+   *
    * @param context The {@link GeoApiContext} to make requests through.
    * @param location The location for which to retrieve a time zone.
    * @return Returns the time zone as a {@link PendingResult}.
@@ -52,6 +57,54 @@ public class TimeZoneApi {
         // "timestamp" is, in effect, ignored.
         "timestamp",
         "0");
+  }
+
+  /**
+   * Retrieves the service's time-zone ID, name and offsets for a location and timestamp.
+   *
+   * <p>The result preserves the service's values rather than calculating offsets using Java's
+   * time-zone rules.
+   *
+   * @param context The {@link GeoApiContext} to make requests through.
+   * @param location The location for which to retrieve a time zone.
+   * @param timestamp Seconds since midnight, January 1, 1970 UTC, including zero for the epoch.
+   * @return Returns the detailed service result as a {@link PendingResult}.
+   */
+  public static PendingResult<TimeZoneResult> getTimeZoneResult(
+      GeoApiContext context, LatLng location, long timestamp) {
+    return context.get(
+        API_CONFIG,
+        DetailedResponse.class,
+        "location",
+        location.toString(),
+        "timestamp",
+        Long.toString(timestamp));
+  }
+
+  /**
+   * Retrieves detailed time-zone data with the name localized to the requested language.
+   *
+   * @param context The {@link GeoApiContext} to make requests through.
+   * @param location The location for which to retrieve a time zone.
+   * @param timestamp Seconds since midnight, January 1, 1970 UTC, including zero for the epoch.
+   * @param language The desired language, or {@code null} to use the service's default.
+   * @return Returns the detailed service result as a {@link PendingResult}.
+   * @see #getTimeZoneResult(GeoApiContext, LatLng, long)
+   */
+  public static PendingResult<TimeZoneResult> getTimeZoneResult(
+      GeoApiContext context, LatLng location, long timestamp, String language) {
+    if (language == null) {
+      return getTimeZoneResult(context, location, timestamp);
+    }
+    return context.get(
+        API_CONFIG,
+        DetailedResponse.class,
+        "location",
+        location.toString(),
+        "timestamp",
+        Long.toString(timestamp),
+        "language",
+        language);
   }
 
   private static class Response implements ApiResponse<TimeZone> {
@@ -71,6 +124,32 @@ public class TimeZoneApi {
         return null;
       }
       return TimeZone.getTimeZone(timeZoneId);
+    }
+
+    @Override
+    public ApiException getError() {
+      if (successful()) {
+        return null;
+      }
+      return ApiException.from(status, errorMessage);
+    }
+  }
+
+  private static class DetailedResponse extends TimeZoneResult
+      implements ApiResponse<TimeZoneResult> {
+    private static final long serialVersionUID = 1L;
+
+    public String status;
+    public String errorMessage;
+
+    @Override
+    public boolean successful() {
+      return "OK".equals(status);
+    }
+
+    @Override
+    public TimeZoneResult getResult() {
+      return this;
     }
 
     @Override
