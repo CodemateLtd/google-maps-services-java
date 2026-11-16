@@ -513,10 +513,17 @@ public class GeoApiContext implements Closeable {
     }
 
     /**
-     * Sets the cumulative time limit for which retry-able errors will be retried. Defaults to 60
-     * seconds. Set to zero to retry requests forever.
+     * Sets the cumulative retry-delay limit. Defaults to 60 seconds. Zero prevents retries. A retry
+     * is not sent if its required delay exceeds the remaining limit.
      *
-     * <p>This operates separately from the count-based {@link #maxRetries(Integer)}.
+     * <p>HTTP 429, 500, 503 and 504 responses are retryable. Recognizable API errors in HTTP 429
+     * instead follow {@link #setIfExceptionIsAllowedToRetry(Class, boolean)}, so permanent quota
+     * errors are not retried by default. Otherwise, API errors follow that exception policy. These
+     * retries do not cover transport exceptions.
+     *
+     * <p>Retries honor valid Retry-After delay-seconds or HTTP-date headers; otherwise they use
+     * jittered exponential backoff. Zero delays and past dates also use backoff to avoid a tight
+     * retry loop. This operates separately from {@link #maxRetries(Integer)}.
      *
      * @param timeout The retry timeout period in {@code unit}s.
      * @param unit The retry timeout time unit.
@@ -567,6 +574,11 @@ public class GeoApiContext implements Closeable {
 
     /**
      * Allows specific API exceptions to be retried or not retried.
+     *
+     * <p>By default, short-term quota errors are retried, but daily quota errors are not. This
+     * policy also applies to recognizable API errors returned with HTTP 429; it does not disable
+     * retries for an HTTP 429 response without a recognizable API error, or HTTP 500, 503 and 504
+     * responses.
      *
      * @param exception The {@code ApiException} to allow or deny being re-tried.
      * @param allowedToRetry Whether to allow or deny re-trying {@code exception}.

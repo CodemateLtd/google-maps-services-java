@@ -49,6 +49,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.slf4j.Logger;
@@ -69,11 +70,13 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
   private final Integer maxRetries;
   private final ExceptionsAllowedToRetry exceptionsAllowedToRetry;
   private final RequestMetrics metrics;
+  private final RetryDelay.Timing timing;
 
   private long errorTimeOut;
   private int retryCounter = 0;
   private long cumulativeSleepTime = 0;
-  private Future<HTTPResponse> call;
+  private volatile Future<HTTPResponse> call;
+  private volatile boolean cancelled;
 
   private static final Logger LOG = LoggerFactory.getLogger(GaePendingResult.class.getName());
   private static final List<Integer> RETRY_ERROR_CODES = Arrays.asList(500, 503, 504);
@@ -95,6 +98,28 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
       Integer maxRetries,
       ExceptionsAllowedToRetry exceptionsAllowedToRetry,
       RequestMetrics metrics) {
+    this(
+        request,
+        client,
+        responseClass,
+        fieldNamingPolicy,
+        errorTimeOut,
+        maxRetries,
+        exceptionsAllowedToRetry,
+        metrics,
+        RetryDelay.SYSTEM);
+  }
+
+  GaePendingResult(
+      HTTPRequest request,
+      URLFetchService client,
+      Class<R> responseClass,
+      FieldNamingPolicy fieldNamingPolicy,
+      long errorTimeOut,
+      Integer maxRetries,
+      ExceptionsAllowedToRetry exceptionsAllowedToRetry,
+      RequestMetrics metrics,
+      RetryDelay.Timing timing) {
     this.request = request;
     this.client = client;
     this.responseClass = responseClass;
@@ -103,6 +128,7 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
     this.maxRetries = maxRetries;
     this.exceptionsAllowedToRetry = exceptionsAllowedToRetry;
     this.metrics = metrics;
+    this.timing = timing;
 
     metrics.startNetwork();
     this.call = client.fetchAsync(request);
@@ -142,6 +168,7 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
 
   @Override
   public void cancel() {
+    cancelled = true;
     call.cancel(true);
   }
 
@@ -161,13 +188,27 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
   @SuppressWarnings("unchecked")
   private T parseResponseInternal(GaePendingResult<T, R> request, HTTPResponse response)
       throws IOException, ApiException, InterruptedException {
-    if (shouldRetry(response)) {
-      // Retry is a blocking method, but that's OK. If we're here, we're either in an await()
-      // call, which is blocking anyway, or we're handling a callback in a separate thread.
-      return request.retry();
+    if (RETRY_ERROR_CODES.contains(response.getResponseCode())) {
+      long delay = retryDelay(response);
+      if (delay >= 0) {
+        return request.retry(delay);
+      }
     }
 
     byte[] bytes = response.getContent();
+    if (response.getResponseCode() == 429) {
+      ApiException error = ApiErrorParser.parse(bytes);
+      if (error == null || exceptionsAllowedToRetry.contains(error.getClass())) {
+        long delay = retryDelay(response);
+        if (delay >= 0) {
+          return request.retry(delay);
+        }
+      }
+      if (error != null) {
+        throw error;
+      }
+      throw new IOException("Server Error: " + response.getResponseCode());
+    }
     R resp;
 
     String contentType = null;
@@ -234,9 +275,9 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
       return resp.getResult();
     } else {
       ApiException e = resp.getError();
-      if (shouldRetry(e)) {
-        // Retry over_query_limit errors
-        return request.retry();
+      long delay = exceptionsAllowedToRetry.contains(e.getClass()) ? retryDelay(response) : -1;
+      if (delay >= 0) {
+        return request.retry(delay);
       } else {
         // Throw anything else, including OQLs if we've spent too much time retrying
         throw e;
@@ -244,23 +285,41 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
     }
   }
 
-  private T retry() throws IOException, ApiException, InterruptedException {
+  private T retry(long delay) throws IOException, ApiException, InterruptedException {
+    if (cancelled) {
+      throw new CancellationException();
+    }
+    metrics.startNetwork();
+    try {
+      timing.sleep(delay);
+      if (cancelled) {
+        throw new CancellationException();
+      }
+    } catch (InterruptedException | CancellationException failure) {
+      metrics.endNetwork();
+      throw failure;
+    }
+    cumulativeSleepTime = RetryDelay.add(cumulativeSleepTime, delay);
     retryCounter++;
     LOG.info("Retrying request. Retry #{}", retryCounter);
-    metrics.startNetwork();
     this.call = client.fetchAsync(request);
+    if (cancelled) {
+      call.cancel(true);
+      metrics.endNetwork();
+      throw new CancellationException();
+    }
     return this.await();
   }
 
-  private boolean shouldRetry(HTTPResponse response) {
-    return RETRY_ERROR_CODES.contains(response.getResponseCode())
-        && cumulativeSleepTime < errorTimeOut
-        && (maxRetries == null || retryCounter < maxRetries);
-  }
-
-  private boolean shouldRetry(ApiException exception) {
-    return exceptionsAllowedToRetry.contains(exception.getClass())
-        && cumulativeSleepTime < errorTimeOut
-        && (maxRetries == null || retryCounter < maxRetries);
+  private long retryDelay(HTTPResponse response) {
+    String retryAfter = null;
+    for (HTTPHeader header : response.getHeaders()) {
+      if (header.getName().equalsIgnoreCase("Retry-After")) {
+        retryAfter = header.getValue();
+        break;
+      }
+    }
+    return RetryDelay.next(
+        retryAfter, retryCounter, maxRetries, errorTimeOut, cumulativeSleepTime, timing);
   }
 }
