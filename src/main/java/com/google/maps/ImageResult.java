@@ -19,7 +19,14 @@ import com.google.maps.errors.ApiException;
 import com.google.maps.internal.ApiResponse;
 import java.io.Serializable;
 
-/** {@code ImageResult} is the object returned from API end points that return images. */
+/**
+ * The result returned by image API endpoints.
+ *
+ * <p>Requests return an image only for an HTTP-successful response with an image content type and a
+ * nonempty body. Recognizable service errors raise {@link ApiException}; other invalid image
+ * responses raise {@link java.io.IOException} including the HTTP status code. Image bytes are not
+ * decoded or inspected: warning or error graphics returned as successful images are not detected.
+ */
 public class ImageResult implements Serializable {
 
   public ImageResult(String contentType, byte[] imageData) {
@@ -36,8 +43,9 @@ public class ImageResult implements Serializable {
   public final String contentType;
 
   /**
-   * <code>ImageResult.Response</code> is a type system hack to enable API endpoints to return a
-   * <code>ImageResult</code>.
+   * <code>ImageResult.Response</code> is the generic type token enabling API endpoints to return an
+   * <code>ImageResult</code>. Transports classify image responses directly, not through this
+   * adapter.
    */
   public static class Response implements ApiResponse<ImageResult> {
     @Override

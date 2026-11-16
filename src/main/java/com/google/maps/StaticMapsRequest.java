@@ -25,6 +25,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * A Maps Static image request. See {@link ImageResult} for response validation and error behavior;
+ * warning graphics returned as successful images are not detected.
+ */
 public class StaticMapsRequest
     extends PendingResultBase<ImageResult, StaticMapsRequest, ImageResult.Response> {
 
