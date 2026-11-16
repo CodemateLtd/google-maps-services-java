@@ -177,12 +177,15 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
       }
     }
 
-    if (contentType != null
-        && contentType.startsWith("image")
-        && responseClass == ImageResult.Response.class
-        && response.getResponseCode() == 200) {
-      ImageResult result = new ImageResult(contentType, bytes);
-      return (T) result;
+    if (responseClass == ImageResult.Response.class) {
+      try {
+        return (T) ImageResponseParser.parse(response.getResponseCode(), contentType, bytes);
+      } catch (ApiException e) {
+        if (shouldRetry(e)) {
+          return request.retry();
+        }
+        throw e;
+      }
     }
 
     Gson gson =

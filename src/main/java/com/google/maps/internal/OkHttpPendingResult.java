@@ -250,17 +250,20 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
 
     byte[] bytes;
     try (ResponseBody body = response.body()) {
-      bytes = body.bytes();
+      bytes = body == null ? null : body.bytes();
     }
     R resp;
     String contentType = response.header("Content-Type");
 
-    if (contentType != null
-        && contentType.startsWith("image")
-        && responseClass == ImageResult.Response.class
-        && response.code() == 200) {
-      ImageResult result = new ImageResult(contentType, bytes);
-      return (T) result;
+    if (responseClass == ImageResult.Response.class) {
+      try {
+        return (T) ImageResponseParser.parse(response.code(), contentType, bytes);
+      } catch (ApiException e) {
+        if (shouldRetry(e)) {
+          return request.retry();
+        }
+        throw e;
+      }
     }
 
     Gson gson =

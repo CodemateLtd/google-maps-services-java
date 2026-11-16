@@ -20,6 +20,9 @@ import com.google.maps.internal.ApiConfig;
 /**
  * A <a href="https://developers.google.com/places/web-service/photos#place_photo_requests">Place
  * Photo</a> request.
+ *
+ * <p>See {@link ImageResult} for response validation and error behavior. Successful image bytes are
+ * returned without inspecting their content for warning or error graphics.
  */
 public class PhotoRequest
     extends PendingResultBase<ImageResult, PhotoRequest, ImageResult.Response> {
