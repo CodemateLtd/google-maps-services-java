@@ -68,8 +68,9 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
   private final FieldNamingPolicy fieldNamingPolicy;
   private final Integer maxRetries;
   private final RequestMetrics metrics;
+  private final RetryDelay.Timing timing;
 
-  private Call call;
+  private volatile Call call;
   private Callback<T> callback;
   private long errorTimeOut;
   private int retryCounter = 0;
@@ -97,6 +98,28 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
       Integer maxRetries,
       ExceptionsAllowedToRetry exceptionsAllowedToRetry,
       RequestMetrics metrics) {
+    this(
+        request,
+        client,
+        responseClass,
+        fieldNamingPolicy,
+        errorTimeOut,
+        maxRetries,
+        exceptionsAllowedToRetry,
+        metrics,
+        RetryDelay.SYSTEM);
+  }
+
+  OkHttpPendingResult(
+      Request request,
+      OkHttpClient client,
+      Class<R> responseClass,
+      FieldNamingPolicy fieldNamingPolicy,
+      long errorTimeOut,
+      Integer maxRetries,
+      ExceptionsAllowedToRetry exceptionsAllowedToRetry,
+      RequestMetrics metrics,
+      RetryDelay.Timing timing) {
     this.request = request;
     this.client = client;
     this.responseClass = responseClass;
@@ -105,6 +128,7 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
     this.maxRetries = maxRetries;
     this.exceptionsAllowedToRetry = exceptionsAllowedToRetry;
     this.metrics = metrics;
+    this.timing = timing;
 
     metrics.startNetwork();
     this.call = client.newCall(request);
@@ -137,27 +161,6 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
 
   @Override
   public T await() throws ApiException, IOException, InterruptedException {
-    // Handle sleeping for retried requests
-    if (retryCounter > 0) {
-      // 0.5 * (1.5 ^ i) represents an increased sleep time of 1.5x per iteration,
-      // starting at 0.5s when i = 0. The retryCounter will be 1 for the 1st retry,
-      // so subtract 1 here.
-      double delaySecs = 0.5 * Math.pow(1.5, retryCounter - 1);
-
-      // Generate a jitter value between -delaySecs / 2 and +delaySecs / 2
-      long delayMillis = (long) (delaySecs * (Math.random() + 0.5) * 1000);
-
-      LOG.debug(
-          String.format(
-              "Sleeping between errors for %dms (retry #%d, already slept %dms)",
-              delayMillis, retryCounter, cumulativeSleepTime));
-      cumulativeSleepTime += delayMillis;
-      try {
-        Thread.sleep(delayMillis);
-      } catch (InterruptedException e) {
-        // No big deal if we don't sleep as long as intended.
-      }
-    }
 
     final BlockingQueue<QueuedResponse> waiter = new ArrayBlockingQueue<>(1);
     final OkHttpPendingResult<T, R> parent = this;
@@ -239,18 +242,31 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
   @SuppressWarnings("unchecked")
   private T parseResponseInternal(OkHttpPendingResult<T, R> request, Response response)
       throws ApiException, InterruptedException, IOException {
-    if (shouldRetry(response)) {
-      // since we are retrying the request we must close the response
-      response.close();
-
-      // Retry is a blocking method, but that's OK. If we're here, we're either in an await()
-      // call, which is blocking anyway, or we're handling a callback in a separate thread.
-      return request.retry();
+    if (RETRY_ERROR_CODES.contains(response.code())) {
+      long delay = retryDelay(response);
+      if (delay >= 0) {
+        response.close();
+        return request.retry(delay);
+      }
     }
 
     byte[] bytes;
     try (ResponseBody body = response.body()) {
       bytes = body.bytes();
+    }
+    if (response.code() == 429) {
+      ApiException error = ApiErrorParser.parse(bytes);
+      if (error == null || exceptionsAllowedToRetry.contains(error.getClass())) {
+        long delay = retryDelay(response);
+        if (delay >= 0) {
+          return request.retry(delay);
+        }
+      }
+      if (error != null) {
+        throw error;
+      }
+      throw new IOException(
+          String.format("Server Error: %d %s", response.code(), response.message()));
     }
     R resp;
     String contentType = response.header("Content-Type");
@@ -314,31 +330,38 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
       return resp.getResult();
     } else {
       ApiException e = resp.getError();
-      if (shouldRetry(e)) {
-        return request.retry();
+      long delay = exceptionsAllowedToRetry.contains(e.getClass()) ? retryDelay(response) : -1;
+      if (delay >= 0) {
+        return request.retry(delay);
       } else {
         throw e;
       }
     }
   }
 
-  private T retry() throws ApiException, InterruptedException, IOException {
-    retryCounter++;
-    LOG.info("Retrying request. Retry #" + retryCounter);
+  private T retry(long delay) throws ApiException, InterruptedException, IOException {
     metrics.startNetwork();
     this.call = client.newCall(request);
+    try {
+      timing.sleep(delay);
+    } catch (InterruptedException failure) {
+      call.cancel();
+      metrics.endNetwork();
+      throw failure;
+    }
+    cumulativeSleepTime = RetryDelay.add(cumulativeSleepTime, delay);
+    retryCounter++;
+    LOG.info("Retrying request. Retry #" + retryCounter);
     return this.await();
   }
 
-  private boolean shouldRetry(Response response) {
-    return RETRY_ERROR_CODES.contains(response.code())
-        && cumulativeSleepTime < errorTimeOut
-        && (maxRetries == null || retryCounter < maxRetries);
-  }
-
-  private boolean shouldRetry(ApiException exception) {
-    return exceptionsAllowedToRetry.contains(exception.getClass())
-        && cumulativeSleepTime < errorTimeOut
-        && (maxRetries == null || retryCounter < maxRetries);
+  private long retryDelay(Response response) {
+    return RetryDelay.next(
+        response.header("Retry-After"),
+        retryCounter,
+        maxRetries,
+        errorTimeOut,
+        cumulativeSleepTime,
+        timing);
   }
 }
