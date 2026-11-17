@@ -23,5 +23,13 @@ public interface RequestMetrics {
 
   void endNetwork();
 
+  /**
+   * Completes a logical request with its final outcome, not an earlier retry's response.
+   *
+   * @param exception The final failure, or null on success.
+   * @param httpStatusCode The final HTTP status, or zero for a transport failure without a
+   *     response.
+   * @param retryCount The number of retries made for this logical request.
+   */
   void endRequest(Exception exception, int httpStatusCode, long retryCount);
 }
