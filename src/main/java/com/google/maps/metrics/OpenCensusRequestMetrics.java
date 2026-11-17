@@ -4,12 +4,15 @@ import io.opencensus.stats.StatsRecorder;
 import io.opencensus.tags.TagContext;
 import io.opencensus.tags.TagValue;
 import io.opencensus.tags.Tagger;
+import java.util.function.LongSupplier;
 
 /** An OpenCensus logger that generates success and latency metrics. */
 final class OpenCensusRequestMetrics implements RequestMetrics {
+  private static final LongSupplier SYSTEM_CLOCK = System::currentTimeMillis;
   private final String requestName;
   private final Tagger tagger;
   private final StatsRecorder statsRecorder;
+  private final LongSupplier clock;
 
   private long requestStart;
   private long networkStart;
@@ -17,9 +20,15 @@ final class OpenCensusRequestMetrics implements RequestMetrics {
   private boolean finished;
 
   OpenCensusRequestMetrics(String requestName, Tagger tagger, StatsRecorder statsRecorder) {
+    this(requestName, tagger, statsRecorder, SYSTEM_CLOCK);
+  }
+
+  OpenCensusRequestMetrics(
+      String requestName, Tagger tagger, StatsRecorder statsRecorder, LongSupplier clock) {
     this.requestName = requestName;
     this.tagger = tagger;
     this.statsRecorder = statsRecorder;
+    this.clock = clock;
     this.requestStart = milliTime();
     this.networkStart = milliTime();
     this.networkTime = 0;
@@ -70,6 +79,6 @@ final class OpenCensusRequestMetrics implements RequestMetrics {
   }
 
   private long milliTime() {
-    return System.currentTimeMillis();
+    return clock.getAsLong();
   }
 }

@@ -120,13 +120,18 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
       metrics.endNetwork();
       return parseResponse(this, result);
     } catch (ExecutionException e) {
+      metrics.endNetwork();
       if (e.getCause() instanceof IOException) {
+        metrics.endRequest((IOException) e.getCause(), 0, retryCounter);
         throw (IOException) e.getCause();
       } else {
         // According to
         // https://cloud.google.com/appengine/docs/standard/java/javadoc/com/google/appengine/api/urlfetch/URLFetchService
         // all exceptions should be subclass of IOException so this should not happen.
-        throw new UnknownErrorException("Unexpected exception from " + e.getMessage());
+        UnknownErrorException failure =
+            new UnknownErrorException("Unexpected exception from " + e.getMessage());
+        metrics.endRequest(failure, 0, retryCounter);
+        throw failure;
       }
     }
   }
