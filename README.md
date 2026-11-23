@@ -225,6 +225,9 @@ req.setCallback(new PendingResult.Callback<GeocodingResponse>() {
 
 ## Building the Project
 
+Use JDK 11 to build the project and run the normal test suite. The packaged library
+still supports Java 8 or later; production compilation enforces the Java 8 API boundary.
+
 > [!NOTE]
 > You will need an API key to run the tests.
 
@@ -234,6 +237,17 @@ $ ./gradlew jar
 
 # Run the tests
 $ ./gradlew test
+```
+
+To check the packaged library on Java 8, keep JDK 11 as `JAVA_HOME` and install a
+separate JDK 8. This check uses a local HTTP fixture, makes no live API calls, and
+requires no API key:
+
+```bash
+$ ./gradlew java8Test
+
+# If Gradle does not automatically detect your JDK 8 installation
+$ ./gradlew java8Test -Porg.gradle.java.installations.paths=/path/to/jdk8
 ```
 
 ## Terms
