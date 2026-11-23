@@ -69,6 +69,15 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:5.2.0"
 }
 
+def packagedJar = tasks.named('jar', Jar)
+
+sourceSets {
+    java8Test {
+        compileClasspath = files(packagedJar.flatMap { it.archiveFile }) + configurations.runtimeClasspath
+        runtimeClasspath = output + compileClasspath
+    }
+}
+
 task updateVersion(type: Copy) {
     from('src') into "build/filtered/src"
     filter(ReplaceTokens, tokens: [VERSION: project.version])
@@ -77,11 +86,28 @@ compileJava.source = "build/filtered/src/main/java"
 compileJava.dependsOn updateVersion
 
 compileJava {
+    options.release = 8
     options.compilerArgs << "-Xlint:deprecation"
 }
 
 compileTestJava {
     options.compilerArgs << "-Xlint:deprecation"
+}
+
+tasks.named('compileJava8TestJava', JavaCompile) {
+    dependsOn packagedJar
+    options.release = 8
+}
+
+tasks.register('java8Test', JavaExec) {
+    group = 'verification'
+    description = 'Runs the packaged-library compatibility check on Java 8.'
+    dependsOn tasks.named('java8TestClasses')
+    classpath = sourceSets.java8Test.runtimeClasspath
+    mainClass = 'com.google.maps.compatibility.Java8CompatibilityTest'
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
 }
 
 // Propagate API Key system properties to test tasks
