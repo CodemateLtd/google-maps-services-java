@@ -34,5 +34,15 @@ jobs:
     - name: Run tests
       run: ./gradlew check test jacocoTestReport --stacktrace
 
-    - name: Send test results to CodeCov
-      run: bash <(curl -s https://codecov.io/bash)
+    # Review both pins together and keep integrity verification enabled.
+    # Trusted branches need CODECOV_TOKEN unless public tokenless uploads are enabled.
+    # Verification and upload errors fail CI.
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+      with:
+        version: v11.3.2
+        files: build/reports/jacoco/test/jacocoTestReport.xml
+        disable_search: true
+        skip_validation: false
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
